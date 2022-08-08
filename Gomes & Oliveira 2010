@@ -1,0 +1,109 @@
+# Citation: Gomes, A.O., Oliveira, M.V.M. (2011). Formal Development of a Cardiac Pacemaker: From Specification to Code. In: Davies, J., Silva, L., Simao, A. (eds) Formal Methods: Foundations and Applications. SBMF 2010. Lecture Notes in Computer Science, vol 6527. Springer, Berlin, Heidelberg. https://doi.org/10.1007/978-3-642-19829-8_14
+# This is in C#, I think. Z operation in C#. Later there is perfect developer code
+
+
+time : N                                            # N as in double-struck, natural number N
+a_start_time, v_start_time, a_max , v_max : N
+a_delay, v_delay, a_curr_measurement, v_curr_measurement : N
+
+PulseGenerator ≙ PacingPulse ∧ SensingPulse ∧ TimeSt # ≙ as in estimates
+                 ∧ MeasuredParameters ∧ Leads ∧ Accelerometer
+                 ∧ EventMarkers ∧ BatteryStatus ∧ ImplantData
+                 ∧ TelemetrySession ∧ ProgrammableParameters
+                 ∧ MagnetTest
+                 
+                 
+SetTimer
+ΔPulseGenerator
+time' = time + 1
+θ(PulseGenerator \ (time)) = θ(PulseGenerator \ (time))'
+
+VentricleStartTime
+ΔPulseGenerator
+bo_mode.chambers_sensed ∈ {C_VENTRICLE,C_DUAL}
+v_curr_measurement > r_wave ∧ r_wave = 0
+r_wave' = v_curr_measurement ∧ v_start_time' = time
+θ(PulseGenerator \ (r_wave, v_start_time))'
+    = θ(PulseGenerator \ (r_wave, v_start_time))
+
+VentricularMeasurement ≙ VentricleStart ∨ VentricleMax ∨ VentricleEnd
+SensingModule ≙ VentricularMeasurement ∨ AtrialMeasurement
+BradTherapy = SetTimer o9 SensingModule o9 SensingMarkers o9 SetMode # o9 is vertically stacked in text with LaTeX wizardry
+
+
+class TimeSt ^=
+  abstract
+    var time : int;
+    var a_start_time, a_max, a_delay : int;
+    var v_start_time, v_max, v_delay : int;
+    var a_curr_measurement, v_curr_measurement : int;
+  interface
+    function time, a_start_time, a_max, a_delay;
+    function v_start_time, v_max, v_delay;
+    function a_curr_measurement, v_curr_measurement;
+  build{!time : int,
+      !a_start_time : int, !a_max : int, !a_delay : int,
+      !v_start_time : int, !v_max : int, !v_delay : int,
+      !a_curr_measurement : int, !v_curr_measurement : int};
+  schema !chg_time(x:int)
+    post time! = x;
+  ...
+end;
+
+
+final class PulseGenerator ^=
+  abstract
+    var c_TimeSt : TimeSt;
+    var c_ProgrammableParameters : ProgrammableParameters;
+    var c_SensingPulse : SensingPulse;
+    var c_PacingPulse : PacingPulse;
+    var c_MeasuredParameters : MeasuredParameters;
+    ...
+    
+
+final class PulseGenerator ^=
+   ...
+  interface
+    function c_TimeSt, c_ProgrammableParameters, c_MeasuredParameters;
+    ...
+    function c_SensingPulse, function c_PacingPulse;
+  build{!c_TimeSt : TimeSt, !c_MeasuredParameters : MeasuredParameters,
+    !c_ProgrammableParameters : ProgrammableParameters,
+    !c_SensingPulse : SensingPulse, !c_PacingPulse : PacingPulse, ...};
+     ...
+
+final class PulseGenerator ^=
+    ...
+    schema !SetTimer
+        post (c_TimeSt!chg_time(c_TimeSt.time + 1));
+    ...
+
+function preVentricularStartTime : bool
+    ^= (c_BO_MODE.bo_mode.chambers_sensed = CHAMBERS C_DUAL
+            | c_BO_MODE.bo_mode.chambers_sensed = CHAMBERS C_VENTRICLE)
+            & ((c_TimeSt.v_curr_measurement
+                    > c_MeasuredParameters.c_RWave.r_wave)
+                & c_MeasuredParameters.c_RWave.r_wave = 0);
+
+c BO MODE.bo mode.chambers sensed = CHAMBERS C VENTRICLE
+| c BO MODE.bo mode.chambers sensed = CHAMBERS C DUAL
+
+schema !VentricularStartTime
+    pre preVentricularStartTime
+    post (c_MeasuredParameters!set_r_wave(c_TimeSt.v_curr_measurement)
+        & c_TimeSt!chg_v_start_time(c_TimeSt.time));
+
+schema !SensingModule
+    post ([preVentricularMeasurement]: !VentricularMeasurement,
+            [preAtrialMeasurement]: !AtrialMeasurement,
+            []);
+
+schema !BradyTherapy
+   post (!SetTimer then !SensingModule
+                   then !SensingMarkers then !SetMode);
+end;
+
+OutputActualTime
+ΞPulseGenerator
+out time! : int
+out time! = time
