@@ -1,34 +1,50 @@
 # Citation: Gomes, A.O., Oliveira, M.V.M. (2011). Formal Development of a Cardiac Pacemaker: From Specification to Code. In: Davies, J., Silva, L., Simao, A. (eds) Formal Methods: Foundations and Applications. SBMF 2010. Lecture Notes in Computer Science, vol 6527. Springer, Berlin, Heidelberg. https://doi.org/10.1007/978-3-642-19829-8_14
-# This is in C#, I think. Z operation in C#. Later there is perfect developer code
+# Largely Z notations, with example codes in Perfect Developer
+# the authors were building a simulation of a pacemaker onto a GUI and these are the codes. 
 
-
-time : N                                            # N as in double-struck, natural number N
-a_start_time, v_start_time, a_max , v_max : N
-a_delay, v_delay, a_curr_measurement, v_curr_measurement : N
-
+---
+time : N---                                            # N as in double-struck, natural number N
+  a_start_time, v_start_time, a_max , v_max : N
+  a_delay, v_delay, a_curr_measurement, v_curr_measurement : N
+---
 PulseGenerator ≙ PacingPulse ∧ SensingPulse ∧ TimeSt # ≙ as in estimates
                  ∧ MeasuredParameters ∧ Leads ∧ Accelerometer
                  ∧ EventMarkers ∧ BatteryStatus ∧ ImplantData
                  ∧ TelemetrySession ∧ ProgrammableParameters
                  ∧ MagnetTest
                  
+---              
                  
-SetTimer
-ΔPulseGenerator
-time' = time + 1
-θ(PulseGenerator \ (time)) = θ(PulseGenerator \ (time))'
+SetTimer---
+  ΔPulseGenerator
+  time' = time + 1
+  θ(PulseGenerator \ (time)) = θ(PulseGenerator \ (time))'
 
-VentricleStartTime
-ΔPulseGenerator
-bo_mode.chambers_sensed ∈ {C_VENTRICLE,C_DUAL}
-v_curr_measurement > r_wave ∧ r_wave = 0
-r_wave' = v_curr_measurement ∧ v_start_time' = time
-θ(PulseGenerator \ (r_wave, v_start_time))'
-    = θ(PulseGenerator \ (r_wave, v_start_time))
+---
+
+VentricleStartTime---
+  ΔPulseGenerator
+  bo_mode.chambers_sensed ∈ {C_VENTRICLE,C_DUAL}
+  v_curr_measurement > r_wave ∧ r_wave = 0
+  r_wave' = v_curr_measurement ∧ v_start_time' = time
+  θ(PulseGenerator \ (r_wave, v_start_time))'
+      = θ(PulseGenerator \ (r_wave, v_start_time))
+      
+---   
 
 VentricularMeasurement ≙ VentricleStart ∨ VentricleMax ∨ VentricleEnd
+
+---
+
 SensingModule ≙ VentricularMeasurement ∨ AtrialMeasurement
-BradTherapy = SetTimer o9 SensingModule o9 SensingMarkers o9 SetMode # o9 is vertically stacked in text with LaTeX wizardry
+
+---
+
+BradTherapy ≙ SetTimer o9 SensingModule o9 SensingMarkers o9 SetMode # o9 is vertically stacked in text with LaTeX wizardry
+
+---
+
+## this is actually code. This is for Perfect Developer, which translates Z to either C, C++, or ADA
 
 
 class TimeSt ^=
@@ -103,7 +119,11 @@ schema !BradyTherapy
                    then !SensingMarkers then !SetMode);
 end;
 
-OutputActualTime
-ΞPulseGenerator
-out time! : int
-out time! = time
+--
+
+OutputActualTime---
+  ΞPulseGenerator
+  out time! : int
+  out time! = time
+
+---
