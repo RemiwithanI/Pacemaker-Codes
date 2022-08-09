@@ -1,138 +1,149 @@
-Heart() =
+#Citation: Raza Kazmi, S. A., Abubakkar, S., Qasim, A., Abbas Kazmi, S. H., … Qureshi, U. Q. (2017). Formal Modelling and Verification of the Operational Modes of Pacemaker. Indian Journal of Science and Technology, 10(20), 1–12. doi:10.17485/ijst/2017/v10i20/104028 
+
+#This is written with formal methods, involving tools from Process Algebra like algebriac languages: Calculus of Communicating Systems (CCS), Commmunicating Sequential Processes (CSP) and LOTOS. 
+#This seeks to model the heart and model a pacemaker, more than it really codes one
+#The basic modes for any pacemaker involves: No response to Sensing(O) means pacing without sensing; triggered response to sensing(T) means triggered pacing; Inhibited response to sensing (I) means during inhibited pacing; tracked response to sensing (D) means during tracked pacing.
+#These modes apply onto the atria (A), ventricles (V), both atria and ventricles (D) and create 18 total mores: AAT, VVT, AOO, AAI, VOO, VVI, VDD, DOO, DDI, DDD, AOOR, AAIR, VOOR, VVIR, VDDR, DOOR, DDIR, DDDR
+
+
+#Six possible behaviours of the heart is as follows. AVD represents atrial ventricular delay, AI refers to interval between two consecutive atrial/ventricular events, L represents the random length of time which delays a pulsing event.
+  Heart() =
   /* normal case */
-(paceAWait[AVD]); (paceVWait[AI - AVD]);
-Repeat Heart() (15)
-/* Ventricle Pace missing */
-(paceA Wait[AVD]) ; (nopaceWait[AI - AVD]);
+  (paceAWait[AVD]); (paceVWait[AI - AVD]);
+Repeat Heart() 
+
+  /* Ventricle Pace missing */
+  (paceA Wait[AVD]) ; (nopaceWait[AI - AVD]);
 Repeat Heart()
-/* Atrial Pace missing */
-(nopaceAWait[AVD]); (paceVWait[AI - AVD]);
-Repeat Heart() (17)
-/* Dead Heart */
-(nopaceAWait[AVD]); (nopaceVWait[AI -
-AVD]); Repeat Heart() (18)
-/* Non-deterministic (delayed A or V)*/
-(paceAWait[AVD+L]); (paceVWait[AI - AVD]);
-Repeat Heart() (19)
-(paceAWait[AVD]); (paceVWait[HI - AVD+L]);
-Repeat Heart() (20)
 
-/* Atria Sensor */
-ASensor() = [AS==1] paceAsenseARepeat
+  /* Atrial Pace missing */
+  (nopaceAWait[AVD]); (paceVWait[AI - AVD]);
+Repeat Heart() 
+
+  /* Dead Heart */
+  (nopaceAWait[AVD]); (nopaceVWait[AI -
+AVD]); Repeat Heart() 
+
+  /* Non-deterministic (delayed A or V)*/
+  (paceAWait[AVD+L]); (paceVWait[AI - AVD]);
+Repeat Heart() 
+  (paceAWait[AVD]); (paceVWait[HI - AVD+L]);
+Repeat Heart() 
+
+
+
+  /* Atria Sensor */
+  ASensor() = [AS==1] paceAsenseARepeat
 ASensor()
-□ [AS==0] paceARepeat ASensor()
-(21)
+  □ [AS==0] paceARepeat ASensor()
 
-/* Ventricle Sensor */
-VSensor() = [VS==1] paceVsenseVRepeat
+  /* Ventricle Sensor */
+  VSensor() = [VS==1] paceVsenseVRepeat
 VSensor()
-□ [VS==0] paceVRepeat VSensor()
-(22)
+  □ [VS==0] paceVRepeat VSensor()
 
-/* Accelerometer activity sensor */
-AccM() = (ActNone{SAct=ActInfo}
+  /* Accelerometer activity sensor */
+  AccM() = (ActNone{SAct=ActInfo}
 RateController()
-⊓ActNone{SAct=0} RateController()
-⊓ActVLow{SAct=1} RateController()
-⊓ActLow{SAct=2} RateController()
-⊓ActMLow{SAct=3} RateController()
-⊓ActMedm{SAct=4} RateController()
-⊓ActMHigh{SAct=5} RateController()
-⊓ActHigh{SAct=6} RateController()
-⊓ActVHigh{SAct=7} RateController()) within[0];
-(23)
+  ⊓ActNone{SAct=0} RateController()
+  ⊓ActVLow{SAct=1} RateController()
+  ⊓ActLow{SAct=2} RateController()
+  ⊓ActMLow{SAct=3} RateController()
+  ⊓ActMedm{SAct=4} RateController()
+  ⊓ActMHigh{SAct=5} RateController()
+  ⊓ActHigh{SAct=6} RateController()
+  ⊓ActVHigh{SAct=7} RateController()) within[0];
 
-RateController () = (RateAdjusting {(SAct! = ActInfo)
+  RateController () = (RateAdjusting {(SAct! = ActInfo)
 {ActInfo = SAct; NewInterval= URI+(LRI-URI)*(VHigh-
-SAct)/VHigh;} (24)
-/* increaseinterval */
-if(Interval <NewInterval) (interval=interval+interv
+SAct)/VHigh;} 
+  /* increaseinterval */
+  if(Interval <NewInterval) (interval=interval+interv
 al*(LRI-MSI)/Recovery Time);
-(25)
-/* decrease interval */
-if(Interval >NewInterval) (interval=intervalinterval*(
-LRI-MSI)/Reaction Time);
-} Skip) within[0]; (26)
 
-PGVVIR= (Heart || VSensor || paceVVIR) ∖ {senseV,
+  /* decrease interval */
+  if(Interval >NewInterval) (interval=interval-interval*(
+LRI-MSI)/Reaction Time);
+} Skip) within[0]; 
+
+  PGVVIR= (Heart || VSensor || paceVVIR) ∖ {senseV,
 paceA, paceV, paceAmissing,
-paceVmissing, VS=1, ActNone, ActVLow, ActLow,
+  paceVmissing, VS=1, ActNone, ActVLow, ActLow,
 ActMLow, ActMedm,ActMHigh, ActHigh, ActVHigh,
-RateAdjusting}; (27)
-PaceVVIR() = AccM(); RateController();PaceVVIR2();Pac
-eVVIR1(); (28)
-PaceVVIR1()= AccM(); RateController();PaceVVIR3();
-PaceVVIR1(); (29)
-PaceVVIR2()= ((atomic{senseVpaceV{VS=0} Skip})
+RateAdjusting}; 
+  PaceVVIR() = AccM(); RateController();PaceVVIR2();Pac
+eVVIR1(); 
+  PaceVVIR1()= AccM(); RateController();PaceVVIR3();
+PaceVVIR1(); 
+  PaceVVIR2()= ((atomic{senseVpaceV{VS=0} Skip})
 timeout[interval]
-((paceV{VS=0} Skip) within[0]); wait[VRP];
-(enableVS{VS=1} Skip) within[0]); (30)
-PaceVVIR3()= ((atomic{senseVpaceV{VS=0}
+  ((paceV{VS=0} Skip) within[0]); wait[VRP];
+(enableVS{VS=1} Skip) within[0]); 
+  PaceVVIR3()= ((atomic{senseVpaceV{VS=0}
 Skip}) timeout[interval - VRP] ((paceV{VS=0} Skip)
 within[0]); wait[VRP] ; (enableVS{VS=1} Skip)
-within[0]); (31)
+within[0]); 
 
-PGDDDR = (setASVS{AS=0; VS=1;} Skip) within[0];
+  PGDDDR = (setASVS{AS=0; VS=1;} Skip) within[0];
 (Heart || VSensor || ASensor
-|| PaceDDDR) ∖ {senseA, senseV, paceA, paceV,
+  || PaceDDDR) ∖ {senseA, senseV, paceA, paceV,
 paceAmissing, paceVmissing, AS=1,
-VS=1, setASVS, ActNone, ActVLow, ActLow,
+    VS=1, setASVS, ActNone, ActVLow, ActLow,
 ActMLow, ActMedm,
-ActMHigh, ActHigh, ActVHigh, RateAdjusting};
-(32)
-PGDDDR()= AccM(); RateController();PaceDDDR2();
-PaceDDDR1(); (33)
-PGDDDR1()= AccM(); RateController();PaceDDDR3();
-PaceDDDR1(); (34)
-PGVVIR2()= (atomic{senseVpaceV{AS=0; VS=0;}
+  ActMHigh, ActHigh, ActVHigh, RateAdjusting};
+  PGDDDR()= AccM(); RateController();PaceDDDR2();
+PaceDDDR1(); 
+  PGDDDR1()= AccM(); RateController();PaceDDDR3();
+PaceDDDR1(); 
+  PGVVIR2()= (atomic{senseVpaceV{AS=0; VS=0;}
 Skip} timeout[interval]
-(paceV{AS=0; VS=0} Skip) within[0]);
+  (paceV{AS=0; VS=0} Skip) within[0]);
 wait[PVARP]; (enableAS{AS=1} Skip)
-within[0]); (atomic{senseApaceA{AS=0; VS=1;}
+  within[0]); (atomic{senseApaceA{AS=0; VS=1;}
 Skip}
-timeout[interval-AVD-PVARP](paceA{AS=0; VS=1}
-Skip) within[0]); (35)
-PGVVIR3()= (atomic{senseVpaceV{AS=0; VS=0;}
+  timeout[interval-AVD-PVARP](paceA{AS=0; VS=1}
+Skip) within[0]); 
+  PGVVIR3()= (atomic{senseVpaceV{AS=0; VS=0;}
 Skip} timeout[AVD]
-(paceV{AS=0; VS=0} Skip) within[0]);
+  (paceV{AS=0; VS=0} Skip) within[0]);
 wait[PVARP]; (enableAS{AS=1} Skip)
-within[0]);(atomic{senseApaceA{AS=0; VS=1;}
+  within[0]);(atomic{senseApaceA{AS=0; VS=1;}
 Skip}
-timeout[interval-AVD-PVARP](paceA{AS=0; VS=1}
-Skip) within[0]); (36)
+  timeout[interval-AVD-PVARP](paceA{AS=0; VS=1}
+Skip) within[0]); 
 
-AVDelay = G (Sensed AV Delay < Fixed AV Delay)
-(37)
-ARP = G ((Last Paced Pulse Atria - Last Sensed Atria)
+  AVDelay = G (Sensed AV Delay < Fixed AV Delay)
+  
+  ARP = G ((Last Paced Pulse Atria - Last Sensed Atria)
 > Atria RP) (38)
-VRP = G ((Last Paced Pulse Ventricle - Last Sensed
+  VRP = G ((Last Paced Pulse Ventricle - Last Sensed
 Ventricle) > Ventricle RP) (39)
-PVARP = G (((Last Paced Pulse Atria - Last Sensed
+  PVARP = G (((Last Paced Pulse Atria - Last Sensed
 Atria) > PVARP) &&
-((Last Paced Pulse Ventricle - Last Sensed Ventricle) >
+  ((Last Paced Pulse Ventricle - Last Sensed Ventricle) >
 PVARP)) (40)
 
-RateLimitA = G(pacing rate of atria < URL && pacing
+  RateLimitA = G(pacing rate of atria < URL && pacing
 rate of atria > LRL) (41)
-RateLimitV = G(pacing rate of ventricle < URL &&
+  RateLimitV = G(pacing rate of ventricle < URL &&
 pacing rate of ventricle > LRL)
-(42)
-AAT = G (sense Atrialpace Atria)
-(43)
-VVT = G (sense Ventricle pace Ventricle)
-(44)
-VDD = G (Sense Atria F (Pace Ventricle && Sensed
+
+  AAT = G (sense Atrialpace Atria)
+  VVT = G (sense Ventricle pace Ventricle)
+  
+  VDD = G (Sense Atria F (Pace Ventricle && Sensed
 AVD < Fixed AVD)) (45)
-AAI = G (sense Atrialnot pace Atria)
-(46)
-VVI = G (sense Ventricle not pace Ventricle)
-(47)
-RateLimitA_R = G (Rate of pacing Atrial< Max Sensor
-Rate) (48)
-RateLimitV_R = G (Rate of pacing Ventricle < Max
-Sensor Rate) (49)
-RateControlLimit_A = GF (Rate of pacing A == RF *
-Activity Threshold) (50)
-RateControlLimit_V = GF (Rate of pacing V == RF *
-Activity Threshold) (51)
+
+  AAI = G (sense Atrialnot pace Atria)
+
+  VVI = G (sense Ventricle not pace Ventricle)
+
+  RateLimitA_R = G (Rate of pacing Atrial< Max Sensor
+Rate) 
+  RateLimitV_R = G (Rate of pacing Ventricle < Max
+Sensor Rate)
+  RateControlLimit_A = GF (Rate of pacing A == RF *
+Activity Threshold) 
+  RateControlLimit_V = GF (Rate of pacing V == RF *
+Activity Threshold)
 
